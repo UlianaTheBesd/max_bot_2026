@@ -1,20 +1,17 @@
-# A new change!
 import telebot
 from telebot import types
 import logging
-from os import getenv
+# from os import getenv - это нужно, чтобы получать токен из отдельного листа.
 
 # ЛОГИРОВАНИЕ (необязательно).
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 # ТОКЕН БОТА.
-BOT_TOKEN = getenv("BOT_TOKEN", "(there was my bot's id, I made it here: @BotFather)")
+BOT_TOKEN = "_"
 
 # ТОКЕН АДМИНИСТРАТОРА (пересылка информации от клиента).
-ADMIN_CHAT_ID = getenv("ADMIN_CHAT_ID", "(there was an id, I made it in this bot: @userinfobot)")
-
+# ADMIN_CHAT_ID = [1247599787, 5371577580]
+ADMIN_CHAT_ID = 5371577580
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -152,7 +149,11 @@ def handle_summary_choice(message):
             f"6. Отметка по английскому: `{data.get('english_grade')}`"
         )
         try:
-            bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_message, parse_mode='Markdown')
+            for admin_id in ADMIN_CHAT_ID:
+                try:
+                    bot.send_message(chat_id=admin_id, text=admin_message, parse_mode='MarkdownV2')
+                except Exception as e:
+                    logging.error(f"Не удалось отправить админу {admin_id}: {e}")
             bot.send_message(chat_id, "Спасибо за выбор нашей школы. Наш администратор обязательно с вами свяжется.", reply_markup=types.ReplyKeyboardRemove())
         except Exception as e:
             bot.send_message(chat_id, "Произошла ошибка при отправке данных. Пожалуйста, попробуйте начать заново, написав /start.", reply_markup=types.ReplyKeyboardRemove())
