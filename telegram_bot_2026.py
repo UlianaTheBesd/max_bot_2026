@@ -10,8 +10,8 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 BOT_TOKEN = "_"
 
 # ТОКЕН АДМИНИСТРАТОРА (пересылка информации от клиента).
-# ADMIN_CHAT_ID = [1247599787, 5371577580]
-ADMIN_CHAT_ID = 5371577580
+# ADMIN_CHAT_ID = [_, _]
+ADMIN_CHAT_ID = _
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
