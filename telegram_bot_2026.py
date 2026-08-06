@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
 import logging
-# from os import getenv
+from os import getenv
 
 # ЛОГИРОВАНИЕ (необязательно).
 logging.basicConfig(
@@ -9,10 +9,10 @@ logging.basicConfig(
 )
 
 # ТОКЕН БОТА.
-BOT_TOKEN = "8491120198:AAFcD5zsocb1r89UvW-6BWlaR0Xk-TrW4kg"
+BOT_TOKEN = getenv("BOT_TOKEN", "(there was my bot's id, I made it here: @BotFather)")
 
 # ТОКЕН АДМИНИСТРАТОРА (пересылка информации от клиента).
-ADMIN_CHAT_ID = "400879292"
+ADMIN_CHAT_ID = getenv("ADMIN_CHAT_ID", "(there was an id, I made it in this bot: @userinfobot)")
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
