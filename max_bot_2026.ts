@@ -1,12 +1,18 @@
 import { Bot } from '@maxhub/max-bot-api';
 
-const token = process.env.BOT_TOKEN;
-if (!token) throw new Error('Token not provided');
+// Создайте экземпляр класса `Bot` и передайте ему токен 
+const bot = new Bot(process.env.BOT_TOKEN!);
 
-const bot = new Bot(token);
+// Теперь вы можете добавлять слушатели обновлений
+// Max Bot API будет вызывать их, когда пользователи взаимодействуют с ботом
 
-bot.on('bot_started', async (ctx) => {
-  return ctx.reply(`Bot started with payload: ${ctx.startPayload}`);
-});
+// Обработчик для команды '/start'
+bot.command('start', (ctx) => ctx.reply('Добро пожаловать!'));
+
+// Обработчик для любого другого сообщения
+bot.on('message_created', (ctx) => ctx.reply('Новое сообщение'));
+
+// Когда вы указали, как обрабатывать обновления, вы можете запустить бота
+// Он подключится к серверам Max и будет ждать обновлений
 
 bot.start();
