@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@maxhub/max-bot-api": "^0.2.5"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^7.0.2"
+  }
+}
