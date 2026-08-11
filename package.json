@@ -1,7 +1,8 @@
 {
   "type": "module",
   "dependencies": {
-    "@maxhub/max-bot-api": "^0.2.5"
+    "@maxhub/max-bot-api": "^0.2.5",
+    "dotenv": "^17.4.2"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",

@@ -1,4 +1,5 @@
 import { Bot } from '@maxhub/max-bot-api';
+import 'dotenv/config'
 
 // Создайте экземпляр класса `Bot` и передайте ему токен 
 const bot = new Bot(process.env.BOT_TOKEN!);
