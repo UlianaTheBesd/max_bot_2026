@@ -4,11 +4,14 @@ import 'dotenv/config'
 // ДЛЯ ЗАПУСКА. node max_bot_2026.ts
 
 // Хранилище состояний пользователей JSON ? (txt может быть сделать ?) ).
-const userStates = new Map<string, 'new' | 'active'>(); // ПЕРЕНЕСТИ В JSON.
+const userStates = new Map<string, 'new' | 'active' | 'waiting_for_name' | 'waiting_for_tele' | ''>(); // ПЕРЕНЕСТИ В JSON.
+
+// Хранилище ответов анкет.
+const userAnswers = new Map<string, { studentName?: string; phone?: string }>();
 
 const bot = new Bot(process.env.BOT_TOKEN!);
 
-// Инлайн-кнопка для новых пользоваетелей
+// Инлайн-кнопка для новых пользователей.
 // (т.к. почему-то "Начать" не отсылает в чат /start).
 const newestKeyboard = Keyboard.inlineKeyboard([
   [Keyboard.button.callback("LET's go! 💥", 'start_activation')],
@@ -21,8 +24,9 @@ const mainKeyboard1 = Keyboard.inlineKeyboard([
 ]);
 
 // ОБРАБОТКА НА NEW / ACTIVE ПОЛЬЗОВАТЕЛЯ.
+// (если пользователь new - будет предложено НЕ основное меню).
 bot.on('message_created', async (ctx, next) => {
-  const userId = ctx.botInfo?.user_id;
+  const userId = ctx.chatId;
   if (!userId) return next(); // что это значит?
   
   const userState = userStates.get(String(userId)); // почему здесь требовался именно String, а не Number?
@@ -34,25 +38,29 @@ bot.on('message_created', async (ctx, next) => {
       attachments: [newestKeyboard],
     });
   }
-  
   return next();
 });
 
-// Команда для сброса пользователя в состояние new.
-bot.command('reset', (ctx) => {
-  const userId = ctx.botInfo?.user_id;
+// Команда для сброса в состояние new.
+// (не для пользователей!).
+bot.command('reset', async (ctx) => {
+  const userId = ctx.chatId;
   if (!userId) return ctx.reply('Не удалось определить ваш ID'); // Зачем отправлять это сообщение?.. типа просто "возникла ошибка"?
 
   userStates.set(String(userId), 'new'); 
+
+  await ctx.deleteMessage();
   
   // Или полностью стираем из памяти: userStates.delete(String(userId)).
 
   return ctx.reply('🔄 Ваше состояние сброшено! Отправьте любое сообщение, чтобы увидеть начальное меню.');
 });
 
+// ПРИВЕТСТВЕННОЕ МЕНЮ ПОСЛЕ 'АКТИВАЦИИ' ПОЛЬЗОВАТЕЛЯ.
+// (new -> active).
 bot.action('start_activation', async (ctx) => {
-  const userId = ctx.botInfo?.user_id;
-  const username = ctx.botInfo?.name || 'пользователь';
+  const userId = ctx.chatId;
+  const username = ctx.user.name || 'пользователь';
   if (!userId) return; // а куда он возвращает нас? в меню?
 
   userStates.set(String(userId), 'active');
@@ -68,24 +76,46 @@ bot.action('start_activation', async (ctx) => {
 {attachments: [mainKeyboard1],});
 });
 
-bot.action('menu_main', (ctx) => {
-  return ctx.reply('Вы в главном меню!', { attachments: [mainKeyboard1] });
+bot.action('menu_main', async (ctx) => {
+  const userId = ctx.chatId;
+  if (!userId) return;
+  userStates.set(String(userId), 'waiting_for_name');
+
+  await ctx.deleteMessage();
+
+  return ctx.reply('Пожалуйста, введите фамилию и имя ребёнка.');
 });
 
-bot.action('reset_new', (ctx) => {
-  const userId = ctx.botInfo?.user_id;
+bot.action('reset_new', async (ctx) => {
+  const userId = ctx.chatId;
   if (!userId) return ctx.reply('Не удалось определить ваш ID'); // Зачем отправлять это сообщение?.. типа просто "возникла ошибка"?
 
   userStates.set(String(userId), 'new'); 
+
+  await ctx.deleteMessage();
   
   // Или полностью стираем из памяти: userStates.delete(String(userId)).
 
-  return ctx.reply('🔄 Ваше состояние сброшено! Отправьте любое сообщение, чтобы увидеть начлаьное меню.');
+  return ctx.reply('🔄 Ваше состояние сброшено! Отправьте любое сообщение, чтобы увидеть начальное меню.');
+});
+
+// ОБРАБОТКА ПРАВИЛЬНОГО ТЕКСТА ОТ РАЗНЫХ СОСТОЯНИЙ ПОЛЬЗОВАТЕЛЯ.
+bot.on('message_created', (ctx, next) => {
+  const userId = ctx.chatId;
+  if (!userId) return next();
+  
+  const userState = userStates.get(String(userId));
+  if (userState === 'active') {
+    return ctx.reply('Извините, не могу распознать этот текст. Пожалуйста, уточните ваш запрос.', {
+      attachments: [mainKeyboard1],
+    });
+  }
+  return next();
 });
 
 // ОБРАБОТКА НЕПРАВИЛЬНОГО ТЕКСТА ОТ ACTIVE ПОЛЬЗОВАТЕЛЯ.
 bot.on('message_created', (ctx, next) => {
-  const userId = ctx.botInfo?.user_id;
+  const userId = ctx.chatId;
   if (!userId) return next();
   
   const userState = userStates.get(String(userId));
