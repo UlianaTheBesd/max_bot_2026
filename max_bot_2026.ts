@@ -166,23 +166,28 @@ bot.on('message_created', (ctx, next) => {
   const userState = userStates.get(String(userId));
   const userText = ctx.message?.body?.text?.trim();
 
-  // ОБРАБОТКА НА NEW / ACTIVE ПОЛЬЗОВАТЕЛЯ.
-  // (если пользователь new - будет предложено НЕ основное меню).
-  if (!userState || userState === 'new') {
-    userStates.set(String(userId), 'new');
-    return ctx.reply(`Здравствуйте!
-Нажмите кнопку для начала работы бота:`, {
-      attachments: [newestKeyboard],
-    });
-  }
-
   // ОБРАБОТКА НА ADMIN.
-  if (String(userId) == String(ADMIN_USER_ID)) {
+  if (userState === 'admin' || String(userId) === String(ADMIN_USER_ID)) {
     userStates.set(String(userId), 'admin');
     return ctx.reply(`Здравствуйте!
 Вы вошли в режим "Админ" (🤖💥⚡⚡).
 
-Новые заявки от пользователей будут приходить в этот чат 😊`, {
+Новые заявки от пользователей будут приходить в этот чат 😊`);
+  }
+
+  // ОБРАБОТКА НА NEW / ACTIVE ПОЛЬЗОВАТЕЛЯ.
+  // (если пользователь new - будет предложено НЕ основное меню).
+  if (!userState || userState === 'new') {
+    if (String(userId) === String(ADMIN_USER_ID)) {
+      userStates.set(String(userId), 'admin');
+      return ctx.reply(`Здравствуйте!
+Вы вошли в режим "Админ" (🤖💥⚡⚡).
+
+Новые заявки от пользователей будут приходить в этот чат 😊`)
+    }
+    userStates.set(String(userId), 'new');
+    return ctx.reply(`Здравствуйте!
+Нажмите кнопку для начала работы бота:`, {
       attachments: [newestKeyboard],
     });
   }
