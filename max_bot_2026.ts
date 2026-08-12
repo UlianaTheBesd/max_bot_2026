@@ -1,6 +1,8 @@
 import { Bot, Keyboard } from '@maxhub/max-bot-api';
 import 'dotenv/config'
 
+// ДЛЯ ЗАПУСКА. node max_bot_2026.ts
+
 // Функция для отправки сообщения админу (API Max).
 async function sendToAdmin(text: string, attachments?: any[]) {
   const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -36,10 +38,24 @@ async function sendToAdmin(text: string, attachments?: any[]) {
   }
 }
 
-// ДЛЯ ЗАПУСКА. node max_bot_2026.ts
-
 // Хранилище состояний пользователей JSON ? (txt может быть сделать ?) ).
-const userStates = new Map<string, 'new' | 'active' | 'waiting_for_name' | 'waiting_for_tele' | 'waiting_for_school' | 'waiting_for_shift' | 'waiting_for_YofSt' | 'waiting_for_grade' | 'checking_data'>(); // ПЕРЕНЕСТИ В JSON.
+const userStates = new Map<string, 
+  'new' | 
+  'active' | 
+  'waiting_for_name' | 
+  'waiting_for_tele' | 
+  'waiting_for_school' | 
+  'waiting_for_shift' | 
+  'waiting_for_YofSt' | 
+  'waiting_for_grade' | 
+  'checking_data' |
+  'editing_name' |
+  'editing_tele' |
+  'editing_school' |
+  'editing_shift' |
+  'editing_YofSt' |
+  'editing_grade'
+>(); // JSON!!! (Хотя... если они потом все кнопки убирают из чата..?.. Добавить ее одну? (типа, создать новую анкету?))
 
 // Хранилище ответов анкет.
 const userAnswers = new Map<string, { studentName?: string; studentTele?: string; studentSchool?: string; studentShift?: string; studentYearOfSt?: string; studentGrade?: string}>();
@@ -232,7 +248,7 @@ bot.on('message_created', (ctx, next) => {
 (если да, напишите, сколько лет длится обучение).`);
   }
 
-  // ВОПРОС 5: Смена.
+  // ВОПРОС 5: Год в LET.
   if (userState === 'waiting_for_YofSt') {
     if (!userText) {
       return ctx.reply('Пожалуйста, отправьте информацию об обучении текстом.');
@@ -248,7 +264,7 @@ bot.on('message_created', (ctx, next) => {
 \nУточните, какая отметка у Вашего ребёнка по английскому языку в школе?`);
   }
 
-  // ВОПРОС 6: Оценка в школе.
+  // ВОПРОС 6: Оценка в школе + ФИНАЛ.
   if (userState === 'waiting_for_grade') {
     if (!userText) {
       return ctx.reply('Пожалуйста, отправьте отметку текстом.');
@@ -258,10 +274,9 @@ bot.on('message_created', (ctx, next) => {
     currentData.studentGrade = userText;
     userAnswers.set(String(userId), currentData);
     
-    // Сбрасываем состояние пользователя обратно в 'active' (главное меню)
     userStates.set(String(userId), 'checking_data');
 
-    // Итоговые данные анкеты
+    // Итоговые данные анкеты.
     const finalName = currentData.studentName;
     const finalTele = currentData.studentTele;
     const finalSchool = currentData.studentSchool;
@@ -278,6 +293,151 @@ bot.on('message_created', (ctx, next) => {
 6. Отметка по английскому: ${finalGrade}
 `, { attachments: [confirmKeyboard]});
     }
+
+  // ОБРАБОТКА EDITING СОСТОЯНИЙ.
+  // [1 edit].
+  if (userState === 'editing_name') {
+    if (!userText) {
+      return ctx.reply('Пожалуйста, отправьте имя текстом.');
+    }
+
+    const currentData = userAnswers.get(String(userId)) || {};
+    currentData.studentName = userText;
+    userAnswers.set(String(userId), currentData);
+
+    userStates.set(String(userId), 'checking_data');
+
+    return ctx.reply(`"${userText}" ✅
+
+Всё ли указано верно?
+\n1. Фамилия и имя ребёнка: ${currentData.studentName}
+2. Номер телефона родителя: ${currentData.studentTele}
+3. Номер школы и класс: ${currentData.studentSchool}
+4. Смена в школе: ${currentData.studentShift}
+5. Год обучения в LET: ${currentData.studentYearOfSt}
+6. Отметка по английскому: ${currentData.studentGrade}
+`, { attachments: [confirmKeyboard]});
+  }
+
+  // [2 edit].
+  if (userState === 'editing_tele') {
+    if (!userText) {
+      return ctx.reply('Пожалуйста, отправьте номер телефона текстом.');
+    }
+
+    const currentData = userAnswers.get(String(userId)) || {};
+    currentData.studentTele = userText;
+    userAnswers.set(String(userId), currentData);
+
+    userStates.set(String(userId), 'checking_data');
+
+    return ctx.reply(`"${userText}" ✅
+
+Всё ли указано верно?
+\n1. Фамилия и имя ребёнка: ${currentData.studentName}
+2. Номер телефона родителя: ${currentData.studentTele}
+3. Номер школы и класс: ${currentData.studentSchool}
+4. Смена в школе: ${currentData.studentShift}
+5. Год обучения в LET: ${currentData.studentYearOfSt}
+6. Отметка по английскому: ${currentData.studentGrade}
+`, { attachments: [confirmKeyboard]});
+  }
+
+  // [3 edit].
+  if (userState === 'editing_school') {
+    if (!userText) {
+      return ctx.reply('Пожалуйста, отправьте номер школы и класс текстом.');
+    }
+
+    const currentData = userAnswers.get(String(userId)) || {};
+    currentData.studentSchool = userText;
+    userAnswers.set(String(userId), currentData);
+
+    userStates.set(String(userId), 'checking_data');
+
+    return ctx.reply(`"${userText}" ✅
+
+Всё ли указано верно?
+\n1. Фамилия и имя ребёнка: ${currentData.studentName}
+2. Номер телефона родителя: ${currentData.studentTele}
+3. Номер школы и класс: ${currentData.studentSchool}
+4. Смена в школе: ${currentData.studentShift}
+5. Год обучения в LET: ${currentData.studentYearOfSt}
+6. Отметка по английскому: ${currentData.studentGrade}
+`, { attachments: [confirmKeyboard]});
+  }
+
+  // [4 edit].
+  if (userState === 'editing_shift') {
+    if (!userText) {
+      return ctx.reply('Пожалуйста, отправьте данные о смене текстом.');
+    }
+
+    const currentData = userAnswers.get(String(userId)) || {};
+    currentData.studentShift = userText;
+    userAnswers.set(String(userId), currentData);
+
+    userStates.set(String(userId), 'checking_data');
+
+    return ctx.reply(`"${userText}" ✅
+
+Всё ли указано верно?
+\n1. Фамилия и имя ребёнка: ${currentData.studentName}
+2. Номер телефона родителя: ${currentData.studentTele}
+3. Номер школы и класс: ${currentData.studentSchool}
+4. Смена в школе: ${currentData.studentShift}
+5. Год обучения в LET: ${currentData.studentYearOfSt}
+6. Отметка по английскому: ${currentData.studentGrade}
+`, { attachments: [confirmKeyboard]});
+  }
+
+  // [5 edit].
+  if (userState === 'editing_YofSt') {
+    if (!userText) {
+      return ctx.reply('Пожалуйста, отправьте информацию об обучении текстом.');
+    }
+
+    const currentData = userAnswers.get(String(userId)) || {};
+    currentData.studentYearOfSt = userText;
+    userAnswers.set(String(userId), currentData);
+
+    userStates.set(String(userId), 'checking_data');
+
+    return ctx.reply(`"${userText}" ✅
+
+Всё ли указано верно?
+\n1. Фамилия и имя ребёнка: ${currentData.studentName}
+2. Номер телефона родителя: ${currentData.studentTele}
+3. Номер школы и класс: ${currentData.studentSchool}
+4. Смена в школе: ${currentData.studentShift}
+5. Год обучения в LET: ${currentData.studentYearOfSt}
+6. Отметка по английскому: ${currentData.studentGrade}
+`, { attachments: [confirmKeyboard]});
+  }
+
+  // [5 edit].
+  if (userState === 'editing_grade') {
+    if (!userText) {
+      return ctx.reply('Пожалуйста, отправьте отметку текстом.');
+    }
+
+    const currentData = userAnswers.get(String(userId)) || {};
+    currentData.studentGrade = userText;
+    userAnswers.set(String(userId), currentData);
+
+    userStates.set(String(userId), 'checking_data');
+
+    return ctx.reply(`"${userText}" ✅
+
+Всё ли указано верно?
+\n1. Фамилия и имя ребёнка: ${currentData.studentName}
+2. Номер телефона родителя: ${currentData.studentTele}
+3. Номер школы и класс: ${currentData.studentSchool}
+4. Смена в школе: ${currentData.studentShift}
+5. Год обучения в LET: ${currentData.studentYearOfSt}
+6. Отметка по английскому: ${currentData.studentGrade}
+`, { attachments: [confirmKeyboard]});
+  }
 
   // ОБРАБОТКА НЕПРАВИЛЬНОГО ТЕКСТА ОТ ACTIVE ПОЛЬЗОВАТЕЛЯ.
   if (userState === 'active') {
@@ -379,7 +539,7 @@ bot.action('back_to_check', async (ctx) => {
   const finalData = userAnswers.get(String(userId));
   
   if (!finalData) {
-    return ctx.reply('❌ Данные анкеты не найдены. Начните заполнение заново.');
+    return ctx.reply('Данные анкеты не найдены. Начните заполнение заново.');
   }
   
   userStates.set(String(userId), 'checking_data');
@@ -402,7 +562,7 @@ bot.action('edit_name', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_name');
+  userStates.set(String(userId), 'editing_name');
   
   await ctx.deleteMessage();
   
@@ -413,7 +573,7 @@ bot.action('edit_tele', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_tele');
+  userStates.set(String(userId), 'editing_tele');
   
   await ctx.deleteMessage();
   
@@ -424,7 +584,7 @@ bot.action('edit_school', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_school');
+  userStates.set(String(userId), 'editing_school');
   
   await ctx.deleteMessage();
   
@@ -435,7 +595,7 @@ bot.action('edit_shift', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_shift');
+  userStates.set(String(userId), 'editing_shift');
   
   await ctx.deleteMessage();
   
@@ -446,7 +606,7 @@ bot.action('edit_year', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_YofSt');
+  userStates.set(String(userId), 'editing_YofSt');
   
   await ctx.deleteMessage();
   
@@ -457,7 +617,7 @@ bot.action('edit_grade', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_grade');
+  userStates.set(String(userId), 'editing_grade');
   
   await ctx.deleteMessage();
   
