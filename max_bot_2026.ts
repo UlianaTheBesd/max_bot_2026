@@ -5,13 +5,14 @@ import 'dotenv/config'
 
 const bot = new Bot(process.env.BOT_TOKEN!);
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 
 // Функция для отправки сообщения админу (API Max).
 async function sendToAdmin(text: string, attachments?: any[]) {
   const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
   
   if (!ADMIN_USER_ID) {
-    console.error('ADMIN_USER_ID не указан в .env файле');
+    console.error('ADMIN_USER_ID не указан в .env файле.');
     return false;
   }
   
@@ -29,21 +30,22 @@ async function sendToAdmin(text: string, attachments?: any[]) {
     });
     
     if (!response.ok) {
-      console.error('Ошибка отправки админу:', await response.text());
+      console.error('Ошибка отправки ADMIN:', await response.text());
       return false;
     }
     
-    console.log('Анкета успешно отправлена админу');
+    console.log('Анкета успешно отправлена ADMIN.');
     return true;
   } catch (error) {
-    console.error('Ошибка при отправке админу:', error);
+    console.error('Ошибка при отправке ADMIN:', error);
     return false;
   }
 }
 
 // Хранилище состояний пользователей JSON ? (txt может быть сделать ?) ).
 const userStates = new Map<string, 
-  'new' | 
+  'admin' | 
+  'new' |
   'active' | 
   'waiting_for_name' | 
   'waiting_for_tele' | 
@@ -57,8 +59,7 @@ const userStates = new Map<string,
   'editing_school' |
   'editing_shift' |
   'editing_YofSt' |
-  'editing_grade' |
-  'admin'
+  'editing_grade'
 >(); // JSON!!! (Хотя... если они потом все кнопки убирают из чата..?.. Добавить ее одну? (типа, создать новую анкету?))
 
 // Хранилище ответов анкет.
@@ -163,13 +164,18 @@ bot.on('message_created', (ctx, next) => {
   const userId = ctx.chatId;
   if (!userId) return next();
 
+
+  // console.log('Получено сообщение от userId:', userId); // ЧТОБЫ ВЫЯСНИТЬ CHAT ID.
+
   const userState = userStates.get(String(userId));
   const userText = ctx.message?.body?.text?.trim();
 
   // ОБРАБОТКА НА ADMIN.
-  if (userState === 'admin' || String(userId) === String(ADMIN_USER_ID)) {
-    userStates.set(String(userId), 'admin');
-    return ctx.reply(`Здравствуйте!
+  if (String(userId) === String(ADMIN_CHAT_ID) || userState === 'admin') {
+    if (userState !== 'admin') {
+      userStates.set(String(userId), 'admin');
+    }
+      return ctx.reply(`Здравствуйте!
 Вы вошли в режим "Админ" (🤖💥⚡⚡).
 
 Новые заявки от пользователей будут приходить в этот чат 😊`);
@@ -178,13 +184,6 @@ bot.on('message_created', (ctx, next) => {
   // ОБРАБОТКА НА NEW / ACTIVE ПОЛЬЗОВАТЕЛЯ.
   // (если пользователь new - будет предложено НЕ основное меню).
   if (!userState || userState === 'new') {
-    if (String(userId) === String(ADMIN_USER_ID)) {
-      userStates.set(String(userId), 'admin');
-      return ctx.reply(`Здравствуйте!
-Вы вошли в режим "Админ" (🤖💥⚡⚡).
-
-Новые заявки от пользователей будут приходить в этот чат 😊`)
-    }
     userStates.set(String(userId), 'new');
     return ctx.reply(`Здравствуйте!
 Нажмите кнопку для начала работы бота:`, {
@@ -494,8 +493,8 @@ ID пользователя: ${userId}
 5. Год обучения в LET: ${finalData.studentYearOfSt}
 6. Отметка по англ. (в шк.): ${finalData.studentGrade}
 
-(Дата отправки заявки: ${new Date().toLocaleString('ru-RU')})
-`
+(Дата отправки заявки: ${new Date().toLocaleString('ru-RU')})`
+
   const sent = await sendToAdmin(adminMessage1);
   
   userAnswers.delete(String(userId));
