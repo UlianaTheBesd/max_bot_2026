@@ -542,7 +542,7 @@ bot.action('reset_form', async (ctx) => {
   
   await ctx.deleteMessage(); // УДАЛИТЬ?
   
-  return ctx.reply('🔄 Начинаем заполнение заново.\n\nПожалуйста, введите фамилию и имя ребёнка.');
+  return ctx.reply('🗑️ Анкета стёрта.\n\Будем рады увидеть вас снова!', {attachments: [newestKeyboard]});
 });
 
 // Команда back_to_check.
