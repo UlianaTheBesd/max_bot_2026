@@ -164,8 +164,12 @@ bot.on('message_created', (ctx, next) => {
   const userId = ctx.chatId;
   if (!userId) return next();
 
-
-  // console.log('Получено сообщение от userId:', userId); // ЧТОБЫ ВЫЯСНИТЬ CHAT ID.
+  /* ВАЖНО!
+  Это команда позволяет узнать chatID для администратора.
+  Посколько userID почему-то не всегда доступен,
+  Для "ADMIN_CHAT_ID" я использую ctx.chatId.
+  */
+  // console.log('Получено сообщение от userId:', userId);
 
   const userState = userStates.get(String(userId));
   const userText = ctx.message?.body?.text?.trim();
