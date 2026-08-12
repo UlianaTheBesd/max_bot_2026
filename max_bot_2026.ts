@@ -3,6 +3,9 @@ import 'dotenv/config'
 
 // ДЛЯ ЗАПУСКА. node max_bot_2026.ts
 
+const bot = new Bot(process.env.BOT_TOKEN!);
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
+
 // Функция для отправки сообщения админу (API Max).
 async function sendToAdmin(text: string, attachments?: any[]) {
   const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -54,15 +57,12 @@ const userStates = new Map<string,
   'editing_school' |
   'editing_shift' |
   'editing_YofSt' |
-  'editing_grade'
+  'editing_grade' |
+  'admin'
 >(); // JSON!!! (Хотя... если они потом все кнопки убирают из чата..?.. Добавить ее одну? (типа, создать новую анкету?))
 
 // Хранилище ответов анкет.
 const userAnswers = new Map<string, { studentName?: string; studentTele?: string; studentSchool?: string; studentShift?: string; studentYearOfSt?: string; studentGrade?: string}>();
-
-const bot = new Bot(process.env.BOT_TOKEN!);
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
-
 
 // Инлайн-кнопка для новых пользователей.
 // (т.к. почему-то "Начать" не отсылает в чат /start).
@@ -176,6 +176,18 @@ bot.on('message_created', (ctx, next) => {
     });
   }
 
+  // ОБРАБОТКА НА ADMIN.
+  if (String(userId) == String(ADMIN_USER_ID)) {
+    userStates.set(String(userId), 'admin');
+    return ctx.reply(`Здравствуйте!
+Вы вошли в режим "Админ" (🤖💥⚡⚡).
+
+Новые заявки от пользователей будут приходить в этот чат 😊`, {
+      attachments: [newestKeyboard],
+    });
+  }
+
+  // ОБРАБОТКА ОСНОВНЫХ СОСТОЯНИЙ.
   // ВОПРОС 1: ФИ.
   if (userState === 'waiting_for_name') {
     if (!userText) {
@@ -485,7 +497,9 @@ ID пользователя: ${userId}
   userStates.set(String(userId), 'active');
 
   if (sent) {
-    return ctx.reply('🌟 Спасибо! Ваша заявка успешно принята.\nНаш администратор обязательно с вами свяжется в ближайшее время!');
+    return ctx.reply('⭐ Спасибо! Ваша заявка успешно принята.\n\nНаш администратор свяжется с вами в ближайшее время!', {
+      attachments: [mainKeyboard1],
+    });
   } else {
     return ctx.reply('Извините..\nВозникла техническая проблема с отправкой. Пожалуйста, заполните анкету заново.', {
       attachments: [mainKeyboard1],
