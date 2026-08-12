@@ -1,6 +1,41 @@
 import { Bot, Keyboard } from '@maxhub/max-bot-api';
 import 'dotenv/config'
 
+// Функция для отправки сообщения админу (API Max).
+async function sendToAdmin(text: string, attachments?: any[]) {
+  const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
+  
+  if (!ADMIN_USER_ID) {
+    console.error('ADMIN_USER_ID не указан в .env файле');
+    return false;
+  }
+  
+  try {
+    const response = await fetch(`https://platform-api2.max.ru/messages?user_id=${ADMIN_USER_ID}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `${process.env.BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: text,
+        attachments: attachments || [],
+      }),
+    });
+    
+    if (!response.ok) {
+      console.error('Ошибка отправки админу:', await response.text());
+      return false;
+    }
+    
+    console.log('Анкета успешно отправлена админу');
+    return true;
+  } catch (error) {
+    console.error('Ошибка при отправке админу:', error);
+    return false;
+  }
+}
+
 // ДЛЯ ЗАПУСКА. node max_bot_2026.ts
 
 // Хранилище состояний пользователей JSON ? (txt может быть сделать ?) ).
@@ -263,31 +298,66 @@ bot.action('confirm_form', async (ctx) => {
   
   const finalData = userAnswers.get(String(userId));
   
-  await ctx.deleteMessage();
+  if (!finalData) {
+    return ctx.reply('Ошибка: данные анкеты не найдены...');
+  }
   
-  // Тут можно отправить данные куда нужно (в БД, админу и т.д.)
-  console.log('Анкета отправлена:', finalData);
+  await ctx.deleteMessage(); // ??? убрать?
   
-  // Очищаем данные
+  // Сообщение для ADMIN.
+  const adminMessage1 = `📨 НОВАЯ ЗАЯВКА!
+
+Пользователь: ${ctx.user.name || 'Неизвестный'}
+ID пользователя: ${userId}
+
+1. Фамилия и имя ребёнка: ${finalData.studentName}
+2. Телефон родителя: ${finalData.studentTele}
+3. Школа и класс: ${finalData.studentSchool}
+4. Смена в школе: ${finalData.studentShift}
+5. Год обучения в LET: ${finalData.studentYearOfSt}
+6. Отметка по англ. (в шк.): ${finalData.studentGrade}
+
+(Дата отправки заявки: ${new Date().toLocaleString('ru-RU')})
+`
+  const sent = await sendToAdmin(adminMessage1);
+  
   userAnswers.delete(String(userId));
   userStates.set(String(userId), 'active');
-  
-  return ctx.reply('🌟 Спасибо! Ваша заявка успешно принята.\nНаш администратор обязательно с вами свяжется!', {
-    attachments: [mainKeyboard1],
-  });
+
+  if (sent) {
+    return ctx.reply('🌟 Спасибо! Ваша заявка успешно принята.\nНаш администратор обязательно с вами свяжется в ближайшее время!');
+  } else {
+    return ctx.reply('Извините..\nВозникла техническая проблема с отправкой. Пожалуйста, заполните анкету заново.', {
+      attachments: [mainKeyboard1],
+    });
+  }
 });
+
 // [2]
-bot.action('reset_form', async (ctx) => {
+bot.action('change_form', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userAnswers.delete(String(userId));
-  userStates.set(String(userId), 'waiting_for_name');
-  
-  await ctx.deleteMessage();
-  
-  return ctx.reply('🔄 Начинаем заполнение заново.\nПожалуйста, введите фамилию и имя ребёнка.');
+  const finalData = userAnswers.get(String(userId));
+
+  if (!finalData) {
+    return ctx.reply('Ошибка: данные анкеты не найдены...');
+  }
+
+  await ctx.deleteMessage(); // УДАЛИТЬ?
+
+  return ctx.reply(`📝 Выберите поле для редактирования:
+
+1. Фамилия и имя ребёнка: ${finalData.studentName}
+2. Телефон родителя: ${finalData.studentTele}
+3. Школа и класс: ${finalData.studentSchool}
+4. Смена в школе: ${finalData.studentShift}
+5. Год обучения в LET: ${finalData.studentYearOfSt}
+6. Отметка по англ. (в шк.): ${finalData.studentGrade}
+    `, {attachments: [editKeyboard]})
+
 });
+
 // [3]
 bot.action('reset_form', async (ctx) => {
   const userId = ctx.chatId;
@@ -296,11 +366,36 @@ bot.action('reset_form', async (ctx) => {
   userAnswers.delete(String(userId));
   userStates.set(String(userId), 'waiting_for_name');
   
-  await ctx.deleteMessage();
+  await ctx.deleteMessage(); // УДАЛИТЬ?
   
-  return ctx.reply('🔄 Начинаем заполнение заново.\nПожалуйста, введите фамилию и имя ребёнка.');
+  return ctx.reply('🔄 Начинаем заполнение заново.\n\nПожалуйста, введите фамилию и имя ребёнка.');
 });
 
+// Команда back_to_check.
+bot.action('back_to_check', async (ctx) => {
+  const userId = ctx.chatId;
+  if (!userId) return;
+  
+  const finalData = userAnswers.get(String(userId));
+  
+  if (!finalData) {
+    return ctx.reply('❌ Данные анкеты не найдены. Начните заполнение заново.');
+  }
+  
+  userStates.set(String(userId), 'checking_data');
+  
+  await ctx.deleteMessage();
+
+  return ctx.reply(`Проверьте, всё ли указано верно?:
+
+1. Фамилия и имя ребёнка: ${finalData.studentName}
+2. Телефон родителя: ${finalData.studentTele}
+3. Школа и класс: ${finalData.studentSchool}
+4. Смена в школе: ${finalData.studentShift}
+5. Год обучения в LET: ${finalData.studentYearOfSt}
+6. Отметка по англ. (в шк.): ${finalData.studentGrade}
+    `, {attachments: [confirmKeyboard]})
+})
 
 // РЕДАКТИРОВАНИЕ ПРЕДМЕТОВ.
 bot.action('edit_name', async (ctx) => {
@@ -329,7 +424,7 @@ bot.action('edit_school', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_name');
+  userStates.set(String(userId), 'waiting_for_school');
   
   await ctx.deleteMessage();
   
@@ -340,7 +435,7 @@ bot.action('edit_shift', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_tele');
+  userStates.set(String(userId), 'waiting_for_shift');
   
   await ctx.deleteMessage();
   
@@ -351,7 +446,7 @@ bot.action('edit_year', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_name');
+  userStates.set(String(userId), 'waiting_for_YofSt');
   
   await ctx.deleteMessage();
   
@@ -362,7 +457,7 @@ bot.action('edit_grade', async (ctx) => {
   const userId = ctx.chatId;
   if (!userId) return;
   
-  userStates.set(String(userId), 'waiting_for_tele');
+  userStates.set(String(userId), 'waiting_for_grade');
   
   await ctx.deleteMessage();
   
