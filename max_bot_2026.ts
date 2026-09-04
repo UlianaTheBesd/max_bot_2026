@@ -6,6 +6,7 @@ import 'dotenv/config'
 const bot = new Bot(process.env.BOT_TOKEN!);
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+const KOTOARBUZ_CHAT_ID = process.env.KOTOARBUZ_CHAT_ID;
 
 // Функция для отправки сообщения админу (API Max).
 async function sendToAdmin(text: string, attachments?: any[]) {
@@ -489,6 +490,8 @@ bot.action('confirm_form', async (ctx) => {
 
 Пользователь: ${ctx.user.name || 'Неизвестный'}
 ID пользователя: ${userId}
+ID пользователя NEW: ${ctx.user.user_id} // для поиска спамщиков.
+Username пользователя NEW: ${ctx.user.username} // для поиска спамщиков(2).
 
 1. Фамилия и имя ребёнка: ${finalData.studentName}
 2. Телефон родителя: ${finalData.studentTele}
