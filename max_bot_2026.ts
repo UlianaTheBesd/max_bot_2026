@@ -492,6 +492,7 @@ bot.action('confirm_form', async (ctx) => {
 ID пользователя: ${userId}
 ID пользователя NEW: ${ctx.user.user_id} // для поиска спамщиков.
 Username пользователя NEW: ${ctx.user.username} // для поиска спамщиков(2).
+Username пользователя NEW: ${ctx.contactInfo?.tel} // для поиска спамщиков(3).
 
 1. Фамилия и имя ребёнка: ${finalData.studentName}
 2. Телефон родителя: ${finalData.studentTele}
