@@ -489,10 +489,10 @@ bot.action('confirm_form', async (ctx) => {
   const adminMessage1 = `📨 НОВАЯ ЗАЯВКА!
 
 Пользователь: ${ctx.user.name || 'Неизвестный'}
-ID пользователя: ${userId}
-ID пользователя NEW: ${ctx.user.user_id} // для поиска спамщиков.
-Username пользователя NEW: ${ctx.user.username} // для поиска спамщиков(2).
-Username пользователя NEW: ${ctx.contactInfo?.tel} // для поиска спамщиков(3).
+ChatID пользователя: ${userId}
+UserID пользователя: ${ctx.user.user_id}
+Username пользователя: ${ctx.user.username}
+Телефон пользователя: ${ctx.contactInfo?.tel}
 
 1. Фамилия и имя ребёнка: ${finalData.studentName}
 2. Телефон родителя: ${finalData.studentTele}
